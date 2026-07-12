@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ExternalServiceException } from '../../common/errors/exceptions';
 import { v2 as cloudinary } from 'cloudinary';
+import { Readable } from 'stream';
 
 interface MulterFile {
   fieldname: string;
@@ -9,9 +10,6 @@ interface MulterFile {
   encoding: string;
   mimetype: string;
   size: number;
-  destination: string;
-  filename: string;
-  path: string;
   buffer: Buffer;
 }
 
@@ -100,20 +98,30 @@ export class CloudinaryService {
 
     return this.executeWithRetry(async () => {
       try {
-        const result = await cloudinary.uploader.upload(file.path, {
-          folder,
-          resource_type: 'auto',
-          allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
-          transformation: [
-            { quality: 'auto', fetch_format: 'auto' },
-          ],
+        const result = await new Promise<{ url: string; publicId: string }>((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            {
+              folder,
+              resource_type: 'auto',
+              allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+              transformation: [
+                { quality: 'auto', fetch_format: 'auto' },
+              ],
+            },
+            (error, result) => {
+              if (error) return reject(error);
+              resolve({
+                url: result!.secure_url,
+                publicId: result!.public_id,
+              });
+            },
+          );
+
+          Readable.from(file.buffer).pipe(uploadStream);
         });
 
-        this.logger.log(`Image uploaded successfully: ${result.public_id}`);
-        return {
-          url: result.secure_url,
-          publicId: result.public_id,
-        };
+        this.logger.log(`Image uploaded successfully: ${result.publicId}`);
+        return result;
       } catch (error) {
         this.logger.error('Cloudinary upload error:', error);
         throw error;
