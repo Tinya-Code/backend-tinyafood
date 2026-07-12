@@ -39,7 +39,7 @@ CREATE TABLE products (
     category_id CHAR(36),
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    price DECIMAL(10,2) NOT NULL,
+    price DECIMAL(10,2),
     image_url VARCHAR(500),
     is_active TINYINT(1) DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -124,10 +124,10 @@ CREATE TABLE gallery (
 -- ============================================
 CREATE TABLE users (
     id CHAR(36) NOT NULL DEFAULT (UUID()) PRIMARY KEY,
+    firebase_uid VARCHAR(128) UNIQUE NOT NULL,
     restaurant_id CHAR(36) NOT NULL,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL DEFAULT 'staff',  -- admin | manager | staff
     is_active TINYINT(1) DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
