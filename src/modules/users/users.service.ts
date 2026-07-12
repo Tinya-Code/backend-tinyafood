@@ -4,7 +4,6 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { randomUUID } from 'crypto';
-import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UsersService {
@@ -21,17 +20,16 @@ export class UsersService {
     }
 
     const id = randomUUID();
-    const passwordHash = await bcrypt.hash(createUserDto.password, 10);
 
     await this.db.execute(
-      `INSERT INTO users (id, restaurant_id, name, email, password_hash, role) 
+      `INSERT INTO users (id, firebase_uid, restaurant_id, name, email, role) 
        VALUES (?, ?, ?, ?, ?, ?)`,
       [
         id,
+        createUserDto.firebase_uid || '',
         createUserDto.restaurant_id,
         createUserDto.name,
         createUserDto.email,
-        passwordHash,
         createUserDto.role,
       ],
     );
@@ -44,11 +42,11 @@ export class UsersService {
     const offset = (page - 1) * limit;
 
     const rows = await this.db.query<any[]>(
-      `SELECT id, restaurant_id, name, email, role, is_active, created_at, updated_at 
+      `SELECT id, firebase_uid, restaurant_id, name, email, role, is_active, created_at, updated_at 
        FROM users 
        WHERE restaurant_id = ? AND is_active = 1 
        LIMIT ? OFFSET ?`,
-      [restaurantId, limit, offset],
+       [restaurantId, Number(limit), Number(offset)],
     );
 
     const [{ total }] = await this.db.query<any[]>(
@@ -64,7 +62,7 @@ export class UsersService {
 
   async findOne(id: string) {
     const rows = await this.db.query<any[]>(
-      `SELECT id, restaurant_id, name, email, role, is_active, created_at, updated_at 
+      `SELECT id, firebase_uid, restaurant_id, name, email, role, is_active, created_at, updated_at 
        FROM users 
        WHERE id = ? AND is_active = 1`,
       [id],
@@ -77,12 +75,12 @@ export class UsersService {
     return rows[0];
   }
 
-  async findOneByEmail(email: string) {
+  async findByFirebaseUid(firebaseUid: string) {
     const rows = await this.db.query<any[]>(
-      `SELECT id, restaurant_id, name, email, role, is_active 
+      `SELECT id, firebase_uid, restaurant_id, name, email, role, is_active 
        FROM users 
-       WHERE email = ? AND is_active = 1`,
-      [email],
+       WHERE firebase_uid = ? AND is_active = 1`,
+      [firebaseUid],
     );
 
     if (rows.length === 0) {
@@ -92,9 +90,9 @@ export class UsersService {
     return rows[0];
   }
 
-  async findOneByEmailWithPassword(email: string) {
+  async findOneByEmail(email: string) {
     const rows = await this.db.query<any[]>(
-      `SELECT id, restaurant_id, name, email, password_hash, role, is_active 
+      `SELECT id, firebase_uid, restaurant_id, name, email, role, is_active 
        FROM users 
        WHERE email = ? AND is_active = 1`,
       [email],
@@ -154,18 +152,6 @@ export class UsersService {
     return this.findOne(id);
   }
 
-  async updatePassword(id: string, newPassword: string) {
-    await this.findOne(id);
-    const passwordHash = await bcrypt.hash(newPassword, 10);
-
-    await this.db.execute(
-      `UPDATE users SET password_hash = ? WHERE id = ?`,
-      [passwordHash, id],
-    );
-
-    return { id };
-  }
-
   async remove(id: string) {
     await this.findOne(id);
     await this.db.execute(
@@ -173,5 +159,12 @@ export class UsersService {
       [id],
     );
     return { id };
+  }
+
+  async updateFirebaseUid(id: string, firebaseUid: string): Promise<void> {
+    await this.db.execute(
+      `UPDATE users SET firebase_uid = ? WHERE id = ?`,
+      [firebaseUid, id],
+    );
   }
 }
