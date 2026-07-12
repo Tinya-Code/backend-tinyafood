@@ -1,11 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsUUID, IsOptional, IsNumber, Min } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsNumber, Min, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateComboDto {
   @ApiProperty({ description: 'Restaurant ID this combo belongs to' })
-  @IsUUID()
+  @IsString()
   @IsNotEmpty()
+  @MaxLength(36)
   restaurant_id!: string;
 
   @ApiProperty({ description: 'Combo name' })
