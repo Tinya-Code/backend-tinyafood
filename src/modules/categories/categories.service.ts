@@ -35,7 +35,7 @@ export class CategoriesService {
       `SELECT * FROM categories 
        WHERE restaurant_id = ? AND is_active = 1 
        LIMIT ? OFFSET ?`,
-      [restaurantId, limit, offset],
+      [restaurantId, Number(limit), Number(offset)],
     );
 
     const [{ total }] = await this.db.query<any[]>(

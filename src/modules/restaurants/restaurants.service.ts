@@ -36,7 +36,7 @@ export class RestaurantsService {
 
     const rows = await this.db.query<any[]>(
       `SELECT * FROM restaurants WHERE is_active = 1 LIMIT ? OFFSET ?`,
-      [limit, offset],
+      [Number(limit), Number(offset)],
     );
 
     const [{ total }] = await this.db.query<any[]>(

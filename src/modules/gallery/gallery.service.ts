@@ -40,7 +40,7 @@ export class GalleryService {
        WHERE restaurant_id = ? 
        ORDER BY created_at DESC 
        LIMIT ? OFFSET ?`,
-      [restaurantId, limit, offset],
+       [restaurantId, Number(limit), Number(offset)],
     );
 
     const [{ total }] = await this.db.query<any[]>(
