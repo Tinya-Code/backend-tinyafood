@@ -1,13 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsUUID, IsOptional, MaxLength } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateCategoryDto {
   @ApiProperty({ description: 'Restaurant ID this category belongs to' })
-  @IsUUID()
+  @IsString()
   @IsNotEmpty()
+  @MaxLength(36)
   restaurant_id!: string;
 
-  @ApiProperty({ description: 'Identifier of the visual block (e.g. block-1 to block-7)' })
+  @ApiProperty({
+    description: 'Identifier of the visual block (e.g. block-1 to block-7)',
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(36)

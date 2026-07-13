@@ -7,18 +7,14 @@ import {
   Param,
   Delete,
   Query,
-  ForbiddenException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiOkResponse, ApiCreatedResponse } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { UpdatePasswordDto } from './dto/update-password.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { ApiResponse, PaginatedResponse } from '../../common/api-response/api-response';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import type { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -81,21 +77,5 @@ export class UsersController {
   async remove(@Param('id') id: string) {
     await this.usersService.remove(id);
     return ApiResponse.deleted('User deleted successfully');
-  }
-
-  @Patch('users/:id/password')
-  @ApiOperation({ summary: 'Update user password (Admin or self only)' })
-  @ApiOkResponse({ description: 'Password updated successfully' })
-  async updatePassword(
-    @Param('id') id: string,
-    @Body() updatePasswordDto: UpdatePasswordDto,
-    @CurrentUser() currentUser: JwtPayload,
-  ) {
-    if (currentUser.role !== 'admin' && currentUser.sub !== id) {
-      throw new ForbiddenException('You can only change your own password');
-    }
-
-    await this.usersService.updatePassword(id, updatePasswordDto.newPassword);
-    return ApiResponse.success(null, 'Password updated successfully');
   }
 }

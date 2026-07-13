@@ -1,44 +1,54 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
-import { LoginDto } from './dto/login.dto';
-import * as bcrypt from 'bcryptjs';
+import { FirebaseService } from '../../firebase/firebase.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
-    private readonly jwtService: JwtService,
+    private readonly firebaseService: FirebaseService,
   ) {}
 
-  async validateUser(email: string, pass: string): Promise<any> {
-    const user = await this.usersService.findOneByEmailWithPassword(email);
-    if (user) {
-      const isMatch = await bcrypt.compare(pass, user.password_hash);
-      if (isMatch) {
-        const { password_hash, ...result } = user;
-        return result;
+  async login(idToken: string) {
+    const decodedToken = await this.firebaseService.verifyIdToken(idToken);
+
+    // 1. Buscar por firebase_uid
+    let user = await this.usersService.findByFirebaseUid(decodedToken.uid);
+
+    // 2. Si no existe por firebase_uid, buscar por email
+    if (!user && decodedToken.email) {
+      user = await this.usersService.findOneByEmail(decodedToken.email);
+
+      // Si existe por email, vincular el firebase_uid
+      if (user) {
+        await this.usersService.updateFirebaseUid(user.id, decodedToken.uid);
+        user.firebase_uid = decodedToken.uid;
       }
     }
-    return null;
-  }
 
-  async login(loginDto: LoginDto) {
-    const user = await this.validateUser(loginDto.email, loginDto.password);
+    // 3. Si no existe en absoluto, crear nuevo usuario
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      if (!decodedToken.email) {
+        throw new BadRequestException('Firebase token must include an email');
+      }
+
+      user = await this.usersService.create({
+        firebase_uid: decodedToken.uid,
+        email: decodedToken.email,
+        name: decodedToken.name || decodedToken.email,
+        restaurant_id: '', // Will be assigned later
+        role: 'staff',
+      } as any);
     }
 
-    const payload = {
-      email: user.email,
-      sub: user.id,
-      role: user.role,
-      restaurantId: user.restaurant_id,
-    };
-
     return {
-      access_token: this.jwtService.sign(payload),
-      user,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        restaurantId: user.restaurant_id,
+      },
     };
   }
 

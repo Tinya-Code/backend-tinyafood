@@ -1,8 +1,12 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DatabaseException } from '../../common/errors/exceptions';
 import mysql from 'mysql2/promise';
-import * as bcrypt from 'bcryptjs';
+import { DatabaseException } from '../../common/errors/exceptions';
 
 @Injectable()
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {
@@ -44,11 +48,18 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async connect() {
-    const host = this.configService.get<string>('DB_HOST') || 'localhost';
-    const port = this.configService.get<number>('DB_PORT') || 3306;
-    const username = this.configService.get<string>('DB_USERNAME') || 'root';
+    const hostRaw = this.configService.get<string>('DB_HOST') || 'localhost';
+    const [host, portStr] = hostRaw.includes(':')
+      ? hostRaw.split(':')
+      : [hostRaw, String(this.configService.get<number>('DB_PORT') || 3306)];
+    const port = parseInt(portStr, 10) || 3306;
+    const username =
+      this.configService.get<string>('DB_USERNAME') ||
+      this.configService.get<string>('DB_USER') ||
+      'root';
     const password = this.configService.get<string>('DB_PASSWORD') || '';
-    const database = this.configService.get<string>('DB_DATABASE') || 'tinyafood';
+    const database =
+      this.configService.get<string>('DB_DATABASE') || 'tinyafood';
     const charset = this.configService.get<string>('DB_CHARSET') || 'utf8mb4';
 
     let pool: mysql.Pool | null = null;
@@ -94,13 +105,19 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       // Auto-seed if the database is empty
       await this.autoSeed();
     } catch (error) {
-      this.logger.error(`Database connection failed: ${(error as Error).message}`);
+      this.logger.error(
+        `Database connection failed: ${(error as Error).message}`,
+      );
       this.isHealthy = false;
 
       // Destroy the failed pool so it stops trying to reconnect and emitting
       // error events that could crash the process.
       if (pool) {
-        try { await pool.end(); } catch { /* ignore cleanup errors */ }
+        try {
+          await pool.end();
+        } catch {
+          /* ignore cleanup errors */
+        }
       }
 
       throw error;
@@ -222,7 +239,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
 
   async query<T = any>(sql: string, params?: any[]): Promise<T> {
     return this.executeWithRetry(async () => {
-      const [rows] = await this.connection.execute(sql, params);
+      const [rows] = await this.connection.query(sql, params);
       return rows as T;
     }, 'Database query');
   }
@@ -248,7 +265,10 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       connection.release();
     } catch (error) {
       connection.release();
-      throw new DatabaseException('Failed to commit transaction', (error as Error).message);
+      throw new DatabaseException(
+        'Failed to commit transaction',
+        (error as Error).message,
+      );
     }
   }
 
@@ -294,35 +314,41 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     try {
       // Check if table users exists (could fail if schema is not loaded yet)
       const tables = await this.connection.query('SHOW TABLES');
-      const tableNames = (tables[0] as any[]).map(t => Object.values(t)[0]);
-      
-      if (!tableNames.includes('restaurants') || !tableNames.includes('users')) {
-        this.logger.warn('Restaurants or Users table does not exist. Skipping auto-seed.');
+      const tableNames = (tables[0] as any[]).map((t) => Object.values(t)[0]);
+
+      if (
+        !tableNames.includes('restaurants') ||
+        !tableNames.includes('users')
+      ) {
+        this.logger.warn(
+          'Restaurants or Users table does not exist. Skipping auto-seed.',
+        );
         return;
       }
 
-      const [resCountRows] = await this.connection.execute('SELECT COUNT(*) as count FROM restaurants');
+      const [resCountRows] = await this.connection.execute(
+        'SELECT COUNT(*) as count FROM restaurants',
+      );
       const count = (resCountRows as any)[0]?.count || 0;
       if (count === 0) {
         this.logger.log('Database is empty. Running auto-seeding...');
 
         const restaurantId = '00000000-0000-0000-0000-000000000001';
-        const adminId = '00000000-0000-0000-0000-000000000002';
 
         await this.connection.execute(
           `INSERT INTO restaurants (id, name, phone, address, settings) VALUES (?, ?, ?, ?, ?)`,
-          [restaurantId, 'Tinyafood Default', '123456789', 'Av. Principal 123', '{}']
+          [
+            restaurantId,
+            'Tinyafood Default',
+            '123456789',
+            'Av. Principal 123',
+            '{}',
+          ],
         );
 
-        // password 'admin123'
-        const passwordHash = await bcrypt.hash('admin123', 10);
-
-        await this.connection.execute(
-          `INSERT INTO users (id, restaurant_id, name, email, password_hash, role) VALUES (?, ?, ?, ?, ?, ?)`,
-          [adminId, restaurantId, 'Admin Tinyafood', 'admin@tinyafood.com', passwordHash, 'admin']
+        this.logger.log(
+          'Auto-seeding completed successfully. Restaurant created. Users will be created via Firebase Auth.',
         );
-
-        this.logger.log('Auto-seeding completed successfully. Admin created: admin@tinyafood.com / admin123');
       }
     } catch (seedError) {
       this.logger.error('Failed to auto-seed database:', seedError);
