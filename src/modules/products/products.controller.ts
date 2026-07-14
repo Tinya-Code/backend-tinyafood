@@ -19,13 +19,13 @@ import { CloudinaryService } from '../../services/cloudinary/cloudinary.service'
 import { BadRequestException } from '../../common/errors/exceptions';
 import { RestaurantId } from '../../common/decorators/restaurant-id.decorator';
 import { ApiResponse, PaginatedResponse } from '../../common/api-response/api-response';
-
+import type { Express } from 'express';
 @Controller('products')
 export class ProductsController {
   constructor(
     private readonly productService: ProductsService,
     private readonly cloudinary: CloudinaryService,
-  ) {}
+  ) { }
 
   @Get()
   async index(
