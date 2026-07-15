@@ -14,6 +14,7 @@ import { PriceRangesModule } from './modules/price-ranges/price-ranges.module';
 import { ProductPricesModule } from './modules/product-prices/product-prices.module';
 import { CombosModule } from './modules/combos/combos.module';
 import { GalleryModule } from './modules/gallery/gallery.module';
+import { SettingsModule } from './modules/settings/settings.module';
 import { UsersModule } from './modules/users/users.module';
 import { DatabaseModule } from './services/database/database.module';
 import { CloudinaryModule } from './services/cloudinary/cloudinary.module';
@@ -80,6 +81,7 @@ import { ValidationPipe } from './common/validation/validation.pipe';
     ProductPricesModule,
     CombosModule,
     GalleryModule,
+    SettingsModule,
     UsersModule,
     DatabaseModule,
     CloudinaryModule,

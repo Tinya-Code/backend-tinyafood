@@ -37,10 +37,6 @@ export class CreateProductDto {
   imageUrl?: string;
 
   @IsOptional()
-  @IsString()
-  imagePublicId?: string;
-
-  @IsOptional()
   prices?: CreateProductPriceItemDto[];
 
   @IsOptional()

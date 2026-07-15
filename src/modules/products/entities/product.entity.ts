@@ -32,14 +32,6 @@ export class Product {
   @Column({ name: 'image_url', type: 'varchar', length: 500, nullable: true })
   imageUrl: string | null;
 
-  @Column({
-    name: 'image_public_id',
-    type: 'varchar',
-    length: 255,
-    nullable: true,
-  })
-  imagePublicId: string | null;
-
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;
 

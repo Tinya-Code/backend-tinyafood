@@ -73,7 +73,6 @@ export class ProductsController {
       if (file) {
         const uploaded = await this.cloudinary.uploadImage(file);
         dto.imageUrl = uploaded.url;
-        dto.imagePublicId = uploaded.publicId;
       }
 
       const product = await this.productService.create(dto, restaurantId);
@@ -96,15 +95,8 @@ export class ProductsController {
       let imageUrl: string | undefined;
 
       if (file) {
-        const current = await this.productService.findById(id, restaurantId);
-        const oldPublicId = current.imagePublicId || null;
-
         const uploaded = await this.cloudinary.uploadImage(file);
-        if (oldPublicId) {
-          await this.cloudinary.deleteImage(oldPublicId);
-        }
         imageUrl = uploaded.url;
-        dto.imagePublicId = uploaded.publicId;
       } else if (body.image_url) {
         imageUrl = body.image_url;
       }
@@ -126,11 +118,6 @@ export class ProductsController {
     @Param('id', ParseIntPipe) id: number,
     @RestaurantId() restaurantId: string,
   ) {
-    const product = await this.productService.findById(id, restaurantId);
-    if (product.imagePublicId) {
-      await this.cloudinary.deleteImage(product.imagePublicId);
-    }
-
     await this.productService.delete(id, restaurantId);
     return ApiResponse.deleted('Product deleted successfully');
   }
