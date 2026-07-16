@@ -2,116 +2,121 @@ import {
   Controller,
   Get,
   Post,
-  Body,
-  Patch,
-  Param,
+  Put,
   Delete,
+  Param,
+  Body,
   Query,
+  ParseIntPipe,
   UseInterceptors,
   UploadedFile,
-  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiOkResponse, ApiCreatedResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { GalleryService } from './gallery.service';
 import { CreateGalleryDto } from './dto/create-gallery.dto';
 import { UpdateGalleryDto } from './dto/update-gallery.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { CloudinaryService } from '../../services/cloudinary/cloudinary.service';
+import { BadRequestException } from '../../common/errors/exceptions';
+import { RestaurantId } from '../../common/decorators/restaurant-id.decorator';
 import { ApiResponse, PaginatedResponse } from '../../common/api-response/api-response';
-import { Public } from '../../common/decorators/public.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
+import type { Express } from 'express';
 
-@ApiTags('gallery')
-@Controller()
+@Controller('gallery')
 export class GalleryController {
-  constructor(private readonly galleryService: GalleryService) {}
+  constructor(
+    private readonly galleryService: GalleryService,
+    private readonly cloudinary: CloudinaryService,
+  ) {}
 
-  @Post('gallery')
-  @Roles('admin', 'manager')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create a new gallery item (Admin/Manager only)' })
-  @ApiCreatedResponse({ description: 'Gallery item created successfully' })
-  async create(@Body() createGalleryDto: CreateGalleryDto) {
-    const data = await this.galleryService.create(createGalleryDto);
-    return ApiResponse.created(data, 'Gallery item created successfully');
-  }
-
-  @Get('restaurants/:restaurantId/gallery')
-  @Public()
-  @ApiOperation({ summary: 'Get all gallery items for a restaurant' })
-  @ApiOkResponse({ description: 'List of gallery items' })
-  async findAll(
-    @Param('restaurantId') restaurantId: string,
-    @Query() paginationDto: PaginationDto,
+  @Get()
+  async index(
+    @RestaurantId() restaurantId: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
   ) {
-    const { data, total } = await this.galleryService.findAllByRestaurant(
-      restaurantId,
-      paginationDto,
-    );
-    return PaginatedResponse.create(
-      data,
-      paginationDto.page || 1,
-      paginationDto.limit || 10,
-      total,
-      'Gallery items retrieved successfully',
-    );
+    const p = Math.max(1, parseInt(page, 10) || 1);
+    const l = Math.max(1, Math.min(100, parseInt(limit, 10) || 10));
+    const { data, total } = await this.galleryService.findAll(restaurantId, p, l);
+    return PaginatedResponse.create(data, p, l, total, 'Gallery items retrieved successfully');
   }
 
-  @Get('gallery/:id')
-  @Public()
-  @ApiOperation({ summary: 'Get gallery item by ID' })
-  @ApiOkResponse({ description: 'Gallery item detail' })
-  async findOne(@Param('id') id: string) {
-    const data = await this.galleryService.findOne(+id);
-    return ApiResponse.success(data, 'Gallery item retrieved successfully');
+  @Get(':id')
+  async show(@Param('id', ParseIntPipe) id: number) {
+    const item = await this.galleryService.findById(id);
+    return ApiResponse.success(item, 'Gallery item retrieved successfully');
   }
 
-  @Patch('gallery/:id')
-  @Roles('admin', 'manager')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update gallery item details (Admin/Manager only)' })
-  @ApiOkResponse({ description: 'Gallery item updated successfully' })
+  @Post()
+  @UseInterceptors(FileInterceptor('image'))
+  async store(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() body: any,
+    @RestaurantId() restaurantId: string,
+  ) {
+    try {
+      const dto = this.parseBody(body);
+
+      if (file) {
+        const uploaded = await this.cloudinary.uploadImage(file, 'gallery');
+        dto.imageUrl = uploaded.url;
+      }
+
+      const item = await this.galleryService.create(dto, restaurantId);
+      return ApiResponse.created(item, 'Gallery item created successfully');
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  @Put(':id')
+  @UseInterceptors(FileInterceptor('image'))
   async update(
-    @Param('id') id: string,
-    @Body() updateGalleryDto: UpdateGalleryDto,
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() body: any,
   ) {
-    const data = await this.galleryService.update(+id, updateGalleryDto);
-    return ApiResponse.updated(data, 'Gallery item updated successfully');
+    try {
+      const dto = this.parseBody(body);
+      let imageUrl: string | undefined;
+
+      if (file) {
+        const uploaded = await this.cloudinary.uploadImage(file, 'gallery');
+        imageUrl = uploaded.url;
+      } else if (body.image_url) {
+        imageUrl = body.image_url;
+      }
+
+      const item = await this.galleryService.update(id, dto, imageUrl);
+      return ApiResponse.updated(item, 'Gallery item updated successfully');
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
   }
 
-  @Delete('gallery/:id')
-  @Roles('admin', 'manager')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete a gallery item (Admin/Manager only)' })
-  @ApiOkResponse({ description: 'Gallery item deleted successfully' })
-  async remove(@Param('id') id: string) {
-    await this.galleryService.remove(+id);
+  @Delete(':id')
+  async destroy(@Param('id', ParseIntPipe) id: number) {
+    await this.galleryService.delete(id);
     return ApiResponse.deleted('Gallery item deleted successfully');
   }
 
-  @Post('gallery/:id/image')
-  @Roles('admin', 'manager')
-  @ApiBearerAuth()
+  @Post(':id/image')
   @UseInterceptors(FileInterceptor('file'))
-  @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Upload an image for a gallery item (Admin/Manager only)' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        file: {
-          type: 'string',
-          format: 'binary',
-        },
-      },
-    },
-  })
-  @ApiOkResponse({ description: 'Image uploaded successfully' })
-  async uploadImage(@Param('id') id: string, @UploadedFile() file: any) {
+  async uploadImage(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
     if (!file) {
       throw new BadRequestException('No image file provided');
     }
-    const data = await this.galleryService.uploadImage(+id, file);
-    return ApiResponse.success(data, 'Image uploaded successfully');
+    const item = await this.galleryService.uploadImage(id, file);
+    return ApiResponse.success(item, 'Image uploaded successfully');
+  }
+
+  private parseBody(body: any): CreateGalleryDto {
+    return {
+      title: body.title || body.name,
+      description: body.description || undefined,
+      imageUrl: body.image_url || undefined,
+    };
   }
 }
