@@ -58,7 +58,6 @@ export class ProductsService {
       categoryId: dto.categoryId ?? null,
       isActive: dto.isActive ?? true,
       imageUrl: dto.imageUrl ?? null,
-      imagePublicId: dto.imagePublicId ?? null,
       restaurantId,
     });
 
@@ -91,9 +90,6 @@ export class ProductsService {
 
     if (imageUrl !== undefined) {
       existing.imageUrl = imageUrl;
-    }
-    if (dto.imagePublicId !== undefined) {
-      existing.imagePublicId = dto.imagePublicId;
     }
 
     await this.productRepo.save(existing);
