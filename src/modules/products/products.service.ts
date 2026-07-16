@@ -57,6 +57,7 @@ export class ProductsService {
       price: dto.price ?? null,
       categoryId: dto.categoryId ?? null,
       isActive: dto.isActive ?? true,
+      isRecommended: dto.isRecommended ?? false,
       imageUrl: dto.imageUrl ?? null,
       restaurantId,
     });
@@ -87,6 +88,7 @@ export class ProductsService {
     if (dto.price !== undefined) existing.price = dto.price;
     if (dto.categoryId !== undefined) existing.categoryId = dto.categoryId;
     if (dto.isActive !== undefined) existing.isActive = dto.isActive;
+    if (dto.isRecommended !== undefined) existing.isRecommended = dto.isRecommended;
 
     if (imageUrl !== undefined) {
       existing.imageUrl = imageUrl;

@@ -150,6 +150,10 @@ export class ProductsController {
         body.is_active !== undefined
           ? body.is_active === 'true' || body.is_active === true
           : undefined,
+      isRecommended:
+        body.is_recommended !== undefined
+          ? body.is_recommended === 'true' || body.is_recommended === true
+          : undefined,
       prices,
       priceRanges,
     };

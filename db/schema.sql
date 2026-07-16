@@ -42,6 +42,7 @@ CREATE TABLE products (
     price DECIMAL(10,2),
     image_url VARCHAR(500),
     is_active TINYINT(1) DEFAULT 1,
+    is_recommended TINYINT(1) DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE,

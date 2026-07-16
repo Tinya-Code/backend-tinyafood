@@ -81,15 +81,15 @@ ON DUPLICATE KEY UPDATE name = VALUES(name);
 -- ============================================
 -- 4. PRODUCTS (precio fijo)
 -- ============================================
-INSERT INTO products (id, restaurant_id, category_id, name, description, price, image_url, is_active) VALUES
-(1, '00000000-0000-0000-0000-000000000001', 'cat-0000-0000-0000-000000000003', 'Hamburguesa Clasica', 'Carne 200g, lechuga, tomate, queso cheddar, salsa especial', 18.00, 'https://res.cloudinary.com/demo/image/upload/products/burger-clasica.jpg', 1),
-(2, '00000000-0000-0000-0000-000000000001', 'cat-0000-0000-0000-000000000003', 'Hamburguesa Doble', 'Doble carne 200g, doble queso, bacon, cebolla caramelizada', 28.00, 'https://res.cloudinary.com/demo/image/upload/products/burger-doble.jpg', 1),
-(3, '00000000-0000-0000-0000-000000000001', 'cat-0000-0000-0000-000000000002', 'Pollo a la Brasa', 'Medio pollo a la brasa con papas fritas y ensalada', 22.00, 'https://res.cloudinary.com/demo/image/upload/products/pollo-brasa.jpg', 1),
-(4, '00000000-0000-0000-0000-000000000001', 'cat-0000-0000-0000-000000000002', 'Quarter de Pollo', 'Cuarto de pollo con arroz, papas y ensalada', 15.00, 'https://res.cloudinary.com/demo/image/upload/products/quarter-pollo.jpg', 1),
-(5, '00000000-0000-0000-0000-000000000001', 'cat-0000-0000-0000-000000000004', 'Gaseosa Personal', 'Gaseosa 400ml (Coca-Cola, Sprite, Fanta)', 4.00, 'https://res.cloudinary.com/demo/image/upload/products/gaseosa.jpg', 1),
-(6, '00000000-0000-0000-0000-000000000001', 'cat-0000-0000-0000-000000000004', 'Agua Mineral', 'Agua sin gas 625ml', 3.00, 'https://res.cloudinary.com/demo/image/upload/products/agua.jpg', 1),
-(7, '00000000-0000-0000-0000-000000000001', 'cat-0000-0000-0000-000000000005', 'Tiramisu', 'Tiramisu casero individual', 12.00, 'https://res.cloudinary.com/demo/image/upload/products/tiramisu.jpg', 1),
-(8, '00000000-0000-0000-0000-000000000001', 'cat-0000-0000-0000-000000000005', 'Helado Artesanal', '2 bolas de helado (vainilla, chocolate, fresa)', 8.00, 'https://res.cloudinary.com/demo/image/upload/products/helado.jpg', 1)
+INSERT INTO products (id, restaurant_id, category_id, name, description, price, image_url, is_active, is_recommended) VALUES
+(1, '00000000-0000-0000-0000-000000000001', 'cat-0000-0000-0000-000000000003', 'Hamburguesa Clasica', 'Carne 200g, lechuga, tomate, queso cheddar, salsa especial', 18.00, 'https://res.cloudinary.com/demo/image/upload/products/burger-clasica.jpg', 1, 1),
+(2, '00000000-0000-0000-0000-000000000001', 'cat-0000-0000-0000-000000000003', 'Hamburguesa Doble', 'Doble carne 200g, doble queso, bacon, cebolla caramelizada', 28.00, 'https://res.cloudinary.com/demo/image/upload/products/burger-doble.jpg', 1, 0),
+(3, '00000000-0000-0000-0000-000000000001', 'cat-0000-0000-0000-000000000002', 'Pollo a la Brasa', 'Medio pollo a la brasa con papas fritas y ensalada', 22.00, 'https://res.cloudinary.com/demo/image/upload/products/pollo-brasa.jpg', 1, 1),
+(4, '00000000-0000-0000-0000-000000000001', 'cat-0000-0000-0000-000000000002', 'Quarter de Pollo', 'Cuarto de pollo con arroz, papas y ensalada', 15.00, 'https://res.cloudinary.com/demo/image/upload/products/quarter-pollo.jpg', 1, 0),
+(5, '00000000-0000-0000-0000-000000000001', 'cat-0000-0000-0000-000000000004', 'Gaseosa Personal', 'Gaseosa 400ml (Coca-Cola, Sprite, Fanta)', 4.00, 'https://res.cloudinary.com/demo/image/upload/products/gaseosa.jpg', 1, 0),
+(6, '00000000-0000-0000-0000-000000000001', 'cat-0000-0000-0000-000000000004', 'Agua Mineral', 'Agua sin gas 625ml', 3.00, 'https://res.cloudinary.com/demo/image/upload/products/agua.jpg', 1, 0),
+(7, '00000000-0000-0000-0000-000000000001', 'cat-0000-0000-0000-000000000005', 'Tiramisu', 'Tiramisu casero individual', 12.00, 'https://res.cloudinary.com/demo/image/upload/products/tiramisu.jpg', 1, 1),
+(8, '00000000-0000-0000-0000-000000000001', 'cat-0000-0000-0000-000000000005', 'Helado Artesanal', '2 bolas de helado (vainilla, chocolate, fresa)', 8.00, 'https://res.cloudinary.com/demo/image/upload/products/helado.jpg', 1, 0)
 ON DUPLICATE KEY UPDATE name = VALUES(name);
 
 -- ============================================
