@@ -35,6 +35,9 @@ export class Product {
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;
 
+  @Column({ name: 'is_recommended', type: 'boolean', default: false })
+  isRecommended: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

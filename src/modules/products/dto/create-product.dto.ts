@@ -33,6 +33,10 @@ export class CreateProductDto {
   isActive?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  isRecommended?: boolean;
+
+  @IsOptional()
   @IsString()
   imageUrl?: string;
 
