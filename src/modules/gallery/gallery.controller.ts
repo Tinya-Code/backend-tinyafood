@@ -19,16 +19,33 @@ import { CloudinaryService } from '../../services/cloudinary/cloudinary.service'
 import { BadRequestException } from '../../common/errors/exceptions';
 import { RestaurantId } from '../../common/decorators/restaurant-id.decorator';
 import { ApiResponse, PaginatedResponse } from '../../common/api-response/api-response';
+import { Public } from '../../common/decorators/public.decorator';
 import type { Express } from 'express';
 
-@Controller('gallery')
+@Controller()
 export class GalleryController {
   constructor(
     private readonly galleryService: GalleryService,
     private readonly cloudinary: CloudinaryService,
   ) {}
 
-  @Get()
+  // ── Ruta pública: restaurantId en URL ─────────────────────────────
+  @Get('restaurants/:restaurantId/gallery')
+  @Public()
+  async indexByRestaurant(
+    @Param('restaurantId') restaurantId: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+  ) {
+    const p = Math.max(1, parseInt(page, 10) || 1);
+    const l = Math.max(1, Math.min(100, parseInt(limit, 10) || 10));
+    const { data, total } = await this.galleryService.findAll(restaurantId, p, l);
+    return PaginatedResponse.create(data, p, l, total, 'Gallery items retrieved successfully');
+  }
+
+  // ── Ruta admin: restaurantId por header x-restaurant-id ────────────
+  @Get('gallery')
+  @Public()
   async index(
     @RestaurantId() restaurantId: string,
     @Query('page') page: string = '1',
@@ -40,13 +57,14 @@ export class GalleryController {
     return PaginatedResponse.create(data, p, l, total, 'Gallery items retrieved successfully');
   }
 
-  @Get(':id')
+  @Get('gallery/:id')
+  @Public()
   async show(@Param('id', ParseIntPipe) id: number) {
     const item = await this.galleryService.findById(id);
     return ApiResponse.success(item, 'Gallery item retrieved successfully');
   }
 
-  @Post()
+  @Post('gallery')
   @UseInterceptors(FileInterceptor('image'))
   async store(
     @UploadedFile() file: Express.Multer.File,
@@ -68,7 +86,7 @@ export class GalleryController {
     }
   }
 
-  @Put(':id')
+  @Put('gallery/:id')
   @UseInterceptors(FileInterceptor('image'))
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -93,13 +111,13 @@ export class GalleryController {
     }
   }
 
-  @Delete(':id')
+  @Delete('gallery/:id')
   async destroy(@Param('id', ParseIntPipe) id: number) {
     await this.galleryService.delete(id);
     return ApiResponse.deleted('Gallery item deleted successfully');
   }
 
-  @Post(':id/image')
+  @Post('gallery/:id/image')
   @UseInterceptors(FileInterceptor('file'))
   async uploadImage(
     @Param('id', ParseIntPipe) id: number,
