@@ -19,15 +19,16 @@ import { CloudinaryService } from '../../services/cloudinary/cloudinary.service'
 import { BadRequestException } from '../../common/errors/exceptions';
 import { RestaurantId } from '../../common/decorators/restaurant-id.decorator';
 import { ApiResponse, PaginatedResponse } from '../../common/api-response/api-response';
+import { Public } from '../../common/decorators/public.decorator';
 import type { Express } from 'express';
-@Controller('products')
+@Controller()
 export class ProductsController {
   constructor(
     private readonly productService: ProductsService,
     private readonly cloudinary: CloudinaryService,
-  ) { }
+  ) {}
 
-  @Get()
+  @Get('products')
   async index(
     @RestaurantId() restaurantId: string,
     @Query('page') page: string = '1',
@@ -39,7 +40,23 @@ export class ProductsController {
     return PaginatedResponse.create(data, p, l, total, 'Products retrieved successfully');
   }
 
-  @Get('promotions')
+  // ── Ruta pública: restaurantId en URL ─────────────────────────────
+  @Get('restaurants/:restaurantId/products/promotions')
+  @Public()
+  async promotionsByRestaurant(
+    @Param('restaurantId') restaurantId: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+  ) {
+    const p = Math.max(1, parseInt(page, 10) || 1);
+    const l = Math.max(1, Math.min(100, parseInt(limit, 10) || 10));
+    const { data, total } = await this.productService.findPromotions(restaurantId, p, l);
+    return PaginatedResponse.create(data, p, l, total, 'Promotions retrieved successfully');
+  }
+
+  // ── Ruta admin: restaurantId por header x-restaurant-id ────────────
+  @Get('products/promotions')
+  @Public()
   async promotions(
     @RestaurantId() restaurantId: string,
     @Query('page') page: string = '1',
@@ -51,7 +68,7 @@ export class ProductsController {
     return PaginatedResponse.create(data, p, l, total, 'Promotions retrieved successfully');
   }
 
-  @Get(':id')
+  @Get('products/:id')
   async show(
     @Param('id', ParseIntPipe) id: number,
     @RestaurantId() restaurantId: string,
@@ -60,7 +77,7 @@ export class ProductsController {
     return ApiResponse.success(product, 'Product retrieved successfully');
   }
 
-  @Post()
+  @Post('products')
   @UseInterceptors(FileInterceptor('image'))
   async store(
     @UploadedFile() file: Express.Multer.File,
@@ -82,7 +99,7 @@ export class ProductsController {
     }
   }
 
-  @Put(':id')
+  @Put('products/:id')
   @UseInterceptors(FileInterceptor('image'))
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -113,7 +130,7 @@ export class ProductsController {
     }
   }
 
-  @Delete(':id')
+  @Delete('products/:id')
   async destroy(
     @Param('id', ParseIntPipe) id: number,
     @RestaurantId() restaurantId: string,

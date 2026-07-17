@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Logger,
+  Param,
   Put,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -11,15 +12,32 @@ import { RestaurantSettingsResponseDto } from './dto/restaurant-settings-respons
 import { UpdateRestaurantSettingsDto } from './dto/update-restaurant-settings.dto';
 import { SettingsService } from './settings.service';
 import { RestaurantId } from '../../common/decorators/restaurant-id.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 
 @ApiTags('Settings')
-@ApiBearerAuth()
-@Controller('business-settings')
+@Controller()
 export class SettingsController {
   private readonly logger = new Logger(SettingsController.name);
   constructor(private readonly settingsService: SettingsService) {}
 
-  @Get()
+  // ── Ruta pública: restaurantId en URL ─────────────────────────────
+  @Get('restaurants/:restaurantId/settings')
+  @Public()
+  @ApiOperation({
+    summary: 'Get business settings for a restaurant (public)',
+    description: 'Returns the business settings for a restaurant. No authentication required.',
+  })
+  async getPublicBusinessSettings(
+    @Param('restaurantId') restaurantId: string,
+  ): Promise<ApiResponse<RestaurantSettingsResponseDto>> {
+    this.logger.log(`Getting public business settings for restaurant: ${restaurantId}`);
+    const data = await this.settingsService.getBusinessSettings(restaurantId);
+    return ApiResponse.success(data, 'Business settings retrieved successfully');
+  }
+
+  // ── Ruta admin: restaurantId por header x-restaurant-id ────────────
+  @Get('business-settings')
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get business settings for a restaurant',
     description:
@@ -33,7 +51,8 @@ export class SettingsController {
     return ApiResponse.success(data, 'Business settings retrieved successfully');
   }
 
-  @Put()
+  @Put('business-settings')
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Update business settings for a restaurant',
     description:
