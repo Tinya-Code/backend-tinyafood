@@ -43,10 +43,12 @@ export class CombosController {
   async findAll(
     @Param('restaurantId') restaurantId: string,
     @Query() paginationDto: PaginationDto,
+    @Query('search') search?: string,
   ) {
     const { data, total } = await this.combosService.findAllByRestaurant(
       restaurantId,
       paginationDto,
+      search,
     );
     return PaginatedResponse.create(
       data,

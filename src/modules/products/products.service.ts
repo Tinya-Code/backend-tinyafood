@@ -17,17 +17,26 @@ export class ProductsService {
     private readonly rangeService: PriceRangesService,
   ) {}
 
-  async findAll(restaurantId: string, page: number, limit: number) {
+  async findAll(restaurantId: string, page: number, limit: number, search?: string) {
     const offset = (page - 1) * limit;
 
-    const total = await this.productRepo.count({ where: { restaurantId } });
+    const qb = this.productRepo.createQueryBuilder('p')
+      .where('p.restaurant_id = :restaurantId', { restaurantId });
 
-    const products = await this.productRepo.find({
-      where: { restaurantId },
-      order: { id: 'ASC' },
-      take: limit,
-      skip: offset,
-    });
+    if (search) {
+      qb.andWhere(
+        '(LOWER(p.name) LIKE LOWER(:search) OR LOWER(p.description) LIKE LOWER(:search))',
+        { search: `%${search}%` },
+      );
+    }
+
+    const total = await qb.getCount();
+
+    const products = await qb
+      .orderBy('p.id', 'ASC')
+      .take(limit)
+      .skip(offset)
+      .getMany();
 
     for (const product of products) {
       product.prices = await this.priceService.findAll(product.id);

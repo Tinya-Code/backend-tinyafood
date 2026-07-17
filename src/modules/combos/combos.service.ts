@@ -32,26 +32,29 @@ export class CombosService {
     return this.findOne(result.insertId);
   }
 
-  async findAllByRestaurant(restaurantId: string, paginationDto: PaginationDto) {
+  async findAllByRestaurant(restaurantId: string, paginationDto: PaginationDto, search?: string) {
     const { page = 1, limit = 10 } = paginationDto;
     const offset = (page - 1) * limit;
 
+    let where = 'WHERE restaurant_id = ? AND is_active = 1';
+    const params: any[] = [restaurantId];
+
+    if (search) {
+      where += ' AND (LOWER(name) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?))';
+      params.push(`%${search}%`, `%${search}%`);
+    }
+
     const rows = await this.db.query<any[]>(
-      `SELECT * FROM combos 
-       WHERE restaurant_id = ? AND is_active = 1 
-       LIMIT ? OFFSET ?`,
-       [restaurantId, Number(limit), Number(offset)],
+      `SELECT * FROM combos ${where} LIMIT ? OFFSET ?`,
+      [...params, Number(limit), Number(offset)],
     );
 
     const [{ total }] = await this.db.query<any[]>(
-      `SELECT COUNT(*) as total FROM combos WHERE restaurant_id = ? AND is_active = 1`,
-      [restaurantId],
+      `SELECT COUNT(*) as total FROM combos ${where}`,
+      params,
     );
 
-    return {
-      data: rows,
-      total,
-    };
+    return { data: rows, total };
   }
 
   async findOne(id: number) {
