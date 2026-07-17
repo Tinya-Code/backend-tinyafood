@@ -17,15 +17,27 @@ export class GalleryService {
     private readonly cloudinary: CloudinaryService,
   ) {}
 
-  async findAll(restaurantId: string, page: number, limit: number) {
+  async findAll(restaurantId: string, page: number, limit: number, search?: string) {
     const offset = (page - 1) * limit;
-    const total = await this.galleryRepo.count({ where: { restaurantId } });
-    const items = await this.galleryRepo.find({
-      where: { restaurantId },
-      order: { id: 'ASC' },
-      take: limit,
-      skip: offset,
-    });
+
+    const qb = this.galleryRepo.createQueryBuilder('g')
+      .where('g.restaurant_id = :restaurantId', { restaurantId });
+
+    if (search) {
+      qb.andWhere(
+        '(LOWER(g.title) LIKE LOWER(:search) OR LOWER(g.description) LIKE LOWER(:search))',
+        { search: `%${search}%` },
+      );
+    }
+
+    const total = await qb.getCount();
+
+    const items = await qb
+      .orderBy('g.id', 'ASC')
+      .take(limit)
+      .skip(offset)
+      .getMany();
+
     return { data: items, total };
   }
 

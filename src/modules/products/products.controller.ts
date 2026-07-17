@@ -33,10 +33,11 @@ export class ProductsController {
     @RestaurantId() restaurantId: string,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
+    @Query('search') search?: string,
   ) {
     const p = Math.max(1, parseInt(page, 10) || 1);
     const l = Math.max(1, Math.min(100, parseInt(limit, 10) || 10));
-    const { data, total } = await this.productService.findAll(restaurantId, p, l);
+    const { data, total } = await this.productService.findAll(restaurantId, p, l, search);
     return PaginatedResponse.create(data, p, l, total, 'Products retrieved successfully');
   }
 
@@ -111,11 +112,19 @@ export class ProductsController {
       const dto = this.parseBody(body);
       let imageUrl: string | undefined;
 
+      const existing = await this.productService.findById(id, restaurantId);
+
       if (file) {
+        if (existing.imageUrl) {
+          await this.cloudinary.deleteImageByUrl(existing.imageUrl);
+        }
         const uploaded = await this.cloudinary.uploadImage(file);
         imageUrl = uploaded.url;
-      } else if (body.image_url) {
-        imageUrl = body.image_url;
+      } else if ('image_url' in body) {
+        if (existing.imageUrl) {
+          await this.cloudinary.deleteImageByUrl(existing.imageUrl);
+        }
+        imageUrl = body.image_url || null;
       }
 
       const product = await this.productService.update(

@@ -176,6 +176,19 @@ export class CloudinaryService {
     }, 'delete image');
   }
 
+  async deleteImageByUrl(url: string): Promise<void> {
+    if (!url) return;
+
+    const match = url.match(/\/upload\/(.+)\.\w+$/);
+    if (!match) {
+      this.logger.warn(`Could not extract public ID from URL: ${url}`);
+      return;
+    }
+
+    const publicId = match[1];
+    await this.deleteImage(publicId);
+  }
+
   async deleteImages(publicIds: string[]): Promise<void> {
     if (!publicIds || publicIds.length === 0) {
       return;
