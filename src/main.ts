@@ -27,6 +27,7 @@ async function bootstrap() {
       'http://localhost:3000',
       'http://localhost:4200',
       'http://localhost:4321',
+      'https://lacasona-restaurants.vercel.app',
       'https://admin-menu-seven.vercel.app',
       'https://admin-menu-seven.vercel.app/dashboard',
     ],
