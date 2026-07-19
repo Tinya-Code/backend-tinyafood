@@ -17,6 +17,7 @@ import { GalleryModule } from './modules/gallery/gallery.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { UsersModule } from './modules/users/users.module';
 import { CartaModule } from './modules/carta/carta.module';
+import { BannersModule } from './modules/banners/banners.module';
 import { DatabaseModule } from './services/database/database.module';
 import { CloudinaryModule } from './services/cloudinary/cloudinary.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -85,6 +86,7 @@ import { ValidationPipe } from './common/validation/validation.pipe';
     SettingsModule,
     UsersModule,
     CartaModule,
+    BannersModule,
     DatabaseModule,
     CloudinaryModule,
     AuthModule,
