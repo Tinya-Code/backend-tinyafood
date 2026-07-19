@@ -10,6 +10,7 @@ CREATE TABLE restaurants (
     location_lng DECIMAL(10,7),
     is_active TINYINT(1) DEFAULT 1,
     settings JSON NOT NULL,
+    features JSON DEFAULT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

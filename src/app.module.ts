@@ -15,6 +15,7 @@ import { ProductPricesModule } from './modules/product-prices/product-prices.mod
 import { CombosModule } from './modules/combos/combos.module';
 import { GalleryModule } from './modules/gallery/gallery.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { FeaturesModule } from './modules/features/features.module';
 import { UsersModule } from './modules/users/users.module';
 import { CartaModule } from './modules/carta/carta.module';
 import { DatabaseModule } from './services/database/database.module';
@@ -83,6 +84,7 @@ import { ValidationPipe } from './common/validation/validation.pipe';
     CombosModule,
     GalleryModule,
     SettingsModule,
+    FeaturesModule,
     UsersModule,
     CartaModule,
     DatabaseModule,
