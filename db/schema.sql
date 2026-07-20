@@ -137,3 +137,18 @@ CREATE TABLE users (
     FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE,
     INDEX idx_users_restaurant (restaurant_id)
 );
+
+-- ============================================
+-- 8. BANNERS (propios de cada sucursal)
+-- ============================================
+CREATE TABLE banners (
+    id CHAR(36) NOT NULL DEFAULT (UUID()) PRIMARY KEY,
+    restaurant_id CHAR(36) NOT NULL,
+    title VARCHAR(255),
+    image_url VARCHAR(500) NOT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE,
+    INDEX idx_banners_restaurant (restaurant_id)
+);
