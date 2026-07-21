@@ -7,9 +7,7 @@ import { UpdateRestaurantSettingsDto } from './dto/update-restaurant-settings.dt
 export class SettingsService {
   private readonly logger = new Logger(SettingsService.name);
 
-  constructor(
-    private readonly databaseService: DatabaseService,
-  ) {}
+  constructor(private readonly databaseService: DatabaseService) {}
 
   async getBusinessSettings(
     restaurantId: string,
@@ -18,10 +16,42 @@ export class SettingsService {
       `Getting business settings for restaurant: ${restaurantId}`,
     );
 
+    const result = await this.validateRestaurantExists(restaurantId);
+    const settings = this.parseSettings(result.settings, restaurantId);
+
+    return this.formatSettingsResponse(result, settings);
+  }
+
+  async updateBusinessSettings(
+    restaurantId: string,
+    updateData: UpdateRestaurantSettingsDto,
+  ): Promise<RestaurantSettingsResponseDto> {
+    this.logger.log(
+      `Updating business settings for restaurant: ${restaurantId}`,
+    );
+
+    const result = await this.validateRestaurantExists(restaurantId);
+
+    // Update individual restaurant columns
+    await this.updateRestaurantColumns(restaurantId, updateData);
+
+    // Update settings JSON column
+    const currentSettings = this.parseSettings(result.settings, restaurantId);
+    const settingsChanged = this.updateSettingsFields(currentSettings, updateData);
+
+    if (settingsChanged) {
+      await this.databaseService.query(
+        'UPDATE restaurants SET settings = ?, updated_at = NOW() WHERE id = ?',
+        [JSON.stringify(currentSettings), restaurantId],
+      );
+    }
+
+    return this.getBusinessSettings(restaurantId);
+  }
+
+  private async validateRestaurantExists(restaurantId: string): Promise<any> {
     const rows = await this.databaseService.query<any[]>(
-      `SELECT id, name, phone, address, location_lat, location_lng, is_active,
-              settings, created_at, updated_at
-       FROM restaurants WHERE id = ?`,
+      'SELECT id, settings FROM restaurants WHERE id = ?',
       [restaurantId],
     );
 
@@ -31,16 +61,35 @@ export class SettingsService {
       );
     }
 
-    const result = rows[0];
-    let settings = result.settings;
+    return rows[0];
+  }
 
+  private parseSettings(settings: any, restaurantId: string): any {
     if (typeof settings === 'string') {
-      settings = JSON.parse(settings);
+      try {
+        settings = JSON.parse(settings);
+      } catch (e) {
+        const errorMessage = e instanceof Error ? e.message : String(e);
+        this.logger.error(
+          `Failed to parse settings JSON for restaurant ${restaurantId}. Corrupted data detected. Rejecting operation. Error: ${errorMessage}`,
+        );
+        throw new Error(
+          `Settings data corrupted for restaurant ${restaurantId}. Please contact support.`,
+        );
+      }
     }
     if (!settings || typeof settings !== 'object') {
-      settings = {};
+      this.logger.error(
+        `Invalid settings format for restaurant ${restaurantId}. Expected object, got ${typeof settings}. Rejecting operation.`,
+      );
+      throw new Error(
+        `Invalid settings format for restaurant ${restaurantId}. Please contact support.`,
+      );
     }
+    return settings;
+  }
 
+  private formatSettingsResponse(result: any, settings: any): RestaurantSettingsResponseDto {
     return {
       restaurant_id: result.id,
       name: result.name,
@@ -58,53 +107,27 @@ export class SettingsService {
     };
   }
 
-  async updateBusinessSettings(
+  private async updateRestaurantColumns(
     restaurantId: string,
     updateData: UpdateRestaurantSettingsDto,
-  ): Promise<RestaurantSettingsResponseDto> {
-    this.logger.log(
-      `Updating business settings for restaurant: ${restaurantId}`,
-    );
-
-    // Verify restaurant exists and get current settings
-    const rows = await this.databaseService.query<any[]>(
-      'SELECT id, settings FROM restaurants WHERE id = ?',
-      [restaurantId],
-    );
-
-    if (!rows || rows.length === 0) {
-      throw new NotFoundException(
-        `No restaurant found with id: ${restaurantId}`,
-      );
-    }
-
-    // Update individual restaurant columns
+  ): Promise<void> {
     const colFields: string[] = [];
     const colValues: any[] = [];
 
-    if (updateData.name !== undefined) {
-      colFields.push('name = ?');
-      colValues.push(updateData.name);
-    }
-    if (updateData.phone !== undefined) {
-      colFields.push('phone = ?');
-      colValues.push(updateData.phone);
-    }
-    if (updateData.address !== undefined) {
-      colFields.push('address = ?');
-      colValues.push(updateData.address);
-    }
-    if (updateData.location_lat !== undefined) {
-      colFields.push('location_lat = ?');
-      colValues.push(updateData.location_lat);
-    }
-    if (updateData.location_lng !== undefined) {
-      colFields.push('location_lng = ?');
-      colValues.push(updateData.location_lng);
-    }
-    if (updateData.is_active !== undefined) {
-      colFields.push('is_active = ?');
-      colValues.push(updateData.is_active);
+    const columnMappings = {
+      name: 'name',
+      phone: 'phone',
+      address: 'address',
+      location_lat: 'location_lat',
+      location_lng: 'location_lng',
+      is_active: 'is_active',
+    };
+
+    for (const [dtoField, dbField] of Object.entries(columnMappings)) {
+      if (updateData[dtoField] !== undefined) {
+        colFields.push(`${dbField} = ?`);
+        colValues.push(updateData[dtoField]);
+      }
     }
 
     if (colFields.length > 0) {
@@ -115,42 +138,53 @@ export class SettingsService {
         colValues,
       );
     }
+  }
 
-    // Update settings JSON column
-    let currentSettings = rows[0].settings;
-    if (typeof currentSettings === 'string') {
-      currentSettings = JSON.parse(currentSettings);
-    }
-    if (!currentSettings || typeof currentSettings !== 'object') {
-      currentSettings = {};
-    }
-
+  private updateSettingsFields(
+    currentSettings: any,
+    updateData: UpdateRestaurantSettingsDto,
+  ): boolean {
     let settingsChanged = false;
 
-    if (updateData.whatsapp_config !== undefined) {
-      currentSettings.whatsapp_config = updateData.whatsapp_config;
-      settingsChanged = true;
-    }
-    if (updateData.display_config !== undefined) {
-      currentSettings.display_config = updateData.display_config;
-      settingsChanged = true;
-    }
-    if (updateData.order_config !== undefined) {
-      currentSettings.order_config = updateData.order_config;
-      settingsChanged = true;
-    }
-    if (updateData.business_config !== undefined) {
-      currentSettings.business_config = updateData.business_config;
-      settingsChanged = true;
+    const configFields = [
+      'whatsapp_config',
+      'display_config',
+      'order_config',
+      'business_config',
+    ] as const;
+
+    for (const field of configFields) {
+      if (updateData[field] !== undefined) {
+        currentSettings[field] = this.deepMerge(
+          currentSettings[field] || {},
+          updateData[field],
+        );
+        settingsChanged = true;
+      }
     }
 
-    if (settingsChanged) {
-      await this.databaseService.query(
-        'UPDATE restaurants SET settings = ?, updated_at = NOW() WHERE id = ?',
-        [JSON.stringify(currentSettings), restaurantId],
-      );
-    }
+    return settingsChanged;
+  }
 
-    return this.getBusinessSettings(restaurantId);
+  private deepMerge(target: any, source: any): any {
+    const output = { ...target };
+    if (this.isObject(target) && this.isObject(source)) {
+      Object.keys(source).forEach((key) => {
+        if (this.isObject(source[key])) {
+          if (!(key in target)) {
+            Object.assign(output, { [key]: source[key] });
+          } else {
+            output[key] = this.deepMerge(target[key], source[key]);
+          }
+        } else {
+          Object.assign(output, { [key]: source[key] });
+        }
+      });
+    }
+    return output;
+  }
+
+  private isObject(item: any): boolean {
+    return item && typeof item === 'object' && !Array.isArray(item);
   }
 }
