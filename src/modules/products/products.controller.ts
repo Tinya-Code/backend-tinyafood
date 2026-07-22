@@ -34,10 +34,11 @@ export class ProductsController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
     @Query('search') search?: string,
+    @Query('category') category?: string,
   ) {
     const p = Math.max(1, parseInt(page, 10) || 1);
     const l = Math.max(1, Math.min(100, parseInt(limit, 10) || 10));
-    const { data, total } = await this.productService.findAll(restaurantId, p, l, search);
+    const { data, total } = await this.productService.findAll(restaurantId, p, l, search, category);
     return PaginatedResponse.create(data, p, l, total, 'Products retrieved successfully');
   }
 
