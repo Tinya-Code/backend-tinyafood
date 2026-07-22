@@ -17,7 +17,7 @@ export class ProductsService {
     private readonly rangeService: PriceRangesService,
   ) {}
 
-  async findAll(restaurantId: string, page: number, limit: number, search?: string) {
+  async findAll(restaurantId: string, page: number, limit: number, search?: string, category?: string) {
     const offset = (page - 1) * limit;
 
     const qb = this.productRepo.createQueryBuilder('p')
@@ -28,6 +28,10 @@ export class ProductsService {
         '(LOWER(p.name) LIKE LOWER(:search) OR LOWER(p.description) LIKE LOWER(:search))',
         { search: `%${search}%` },
       );
+    }
+
+    if (category) {
+      qb.andWhere('p.category_id = :categoryId', { categoryId: category });
     }
 
     const total = await qb.getCount();
