@@ -51,7 +51,7 @@ export class SettingsService {
 
   private async validateRestaurantExists(restaurantId: string): Promise<any> {
     const rows = await this.databaseService.query<any[]>(
-      'SELECT id, settings FROM restaurants WHERE id = ?',
+      'SELECT id, name, phone, address, location_lat, location_lng, is_active, settings, created_at, updated_at FROM restaurants WHERE id = ?',
       [restaurantId],
     );
 
@@ -170,7 +170,9 @@ export class SettingsService {
     const output = { ...target };
     if (this.isObject(target) && this.isObject(source)) {
       Object.keys(source).forEach((key) => {
-        if (this.isObject(source[key])) {
+        if (source[key] === null) {
+          delete output[key];
+        } else if (this.isObject(source[key])) {
           if (!(key in target)) {
             Object.assign(output, { [key]: source[key] });
           } else {
