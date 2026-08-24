@@ -19,6 +19,7 @@ import { FeaturesModule } from './modules/features/features.module';
 import { UsersModule } from './modules/users/users.module';
 import { CartaModule } from './modules/carta/carta.module';
 import { BannersModule } from './modules/banners/banners.module';
+import { PromotionsModule } from './modules/promotions/promotions.module';
 import { DatabaseModule } from './services/database/database.module';
 import { CloudinaryModule } from './services/cloudinary/cloudinary.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -89,6 +90,7 @@ import { ValidationPipe } from './common/validation/validation.pipe';
     UsersModule,
     CartaModule,
     BannersModule,
+    PromotionsModule,
     DatabaseModule,
     CloudinaryModule,
     AuthModule,

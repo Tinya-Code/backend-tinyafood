@@ -152,3 +152,23 @@ CREATE TABLE banners (
     FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE,
     INDEX idx_banners_restaurant (restaurant_id)
 );
+
+-- ============================================
+-- 10. PROMOTIONS — ofertas independientes por sucursal
+-- ============================================
+CREATE TABLE promotions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    restaurant_id CHAR(36) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    base_price DECIMAL(10,2),
+    promo_price DECIMAL(10,2) NOT NULL,
+    start_date DATE,
+    end_date DATE,
+    image_url VARCHAR(500),
+    is_active TINYINT(1) DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE,
+    INDEX idx_promotions_restaurant (restaurant_id)
+);
